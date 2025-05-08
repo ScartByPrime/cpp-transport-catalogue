@@ -45,11 +45,11 @@ void AssertImpl(bool value, const std::string& expr_str, const std::string& file
     }
 }
 
+// Удаляет символы новой строки с конца строки
 std::string TrimTrailingNewline(const std::string& str) {
-    std::string result = str;  // Создаём копию строки
-    // Удаляем символы новой строки с конца строки
+    std::string result = str;
     result.erase(result.find_last_not_of('\n') + 1);
-    return result;  // Возвращаем результат
+    return result;
 }
 
 #define ASSERT(expr) AssertImpl(!!(expr), #expr, __FILE__, __FUNCTION__, __LINE__, "")
@@ -77,19 +77,6 @@ void TestStopAdding() {
     ASSERT_HINT(catalogue.CheckDaStop("Biryulyovo Tovarnaya"sv), "Stop with multiple-words name was added incorrectly");
 }
 
-/*
-void TestBusAdding() {
-    InputReader reader;
-    std::string input_ring = "Bus 256: Biryulyovo Zapadnoye > Biryusinka > Universam > Biryulyovo Tovarnaya > Biryulyovo Passazhirskaya > Biryulyovo Zapadnoye";
-    reader.ParseLine(input_ring);
-    std::string input_regular = "Bus 750: Tolstopaltsevo - Marushkino - Rasskazovka";
-    reader.ParseLine(input_regular);
-    TransportCatalogue catalogue;
-    reader.ApplyCommands(catalogue);
-    ASSERT_HINT(catalogue.CheckDaBus("256"sv), "Bus was added incorrectly");
-    ASSERT_HINT(catalogue.CheckDaBus("750"sv), "Bus was added incorrectly");
-}
-*/
 void TestBufferingAndCalculations() {
     InputReader reader;
     std::string input_stop_1 = "Stop Tolstopaltsevo : 55.611087, 37.208290";
@@ -114,10 +101,12 @@ void TestBufferingAndCalculations() {
     reader.ParseLine(input_stop_8);
     TransportCatalogue catalogue;
     reader.ApplyCommands(catalogue);
-    ASSERT_EQUAL_HINT(catalogue.GetRouteSize("750"sv), size_t(5), "Buffering malfunction");
-    ASSERT_EQUAL_HINT(catalogue.GetUniqueStopsCount("750"sv), 3, "Incorrect unique stops calculation");
-    ASSERT_EQUAL_HINT(catalogue.GetRouteSize("256"sv), size_t(6), "Buffering malfunction");
-    ASSERT_EQUAL_HINT(catalogue.GetUniqueStopsCount("256"sv), 5, "Incorrect unique stops calculation");
+    RouteStatistics stat1 = catalogue.GetRouteInfo("750"sv);
+    RouteStatistics stat2 = catalogue.GetRouteInfo("256"sv);
+    ASSERT_EQUAL_HINT(stat1.route_size, size_t(5), "Buffering malfunction");
+    ASSERT_EQUAL_HINT(stat1.unique_stops, 3, "Incorrect unique stops calculation");
+    ASSERT_EQUAL_HINT(stat2.route_size, size_t(6), "Buffering malfunction");
+    ASSERT_EQUAL_HINT(stat2.unique_stops, 5, "Incorrect unique stops calculation");
 }
 
 void TestRequestsToCatalogue() {
@@ -149,19 +138,25 @@ void TestRequestsToCatalogue() {
     ParseAndPrintStat(catalogue, request, out);
     std::string result = out.str();
     ASSERT_EQUAL_HINT(TrimTrailingNewline(result), std::string("Bus Bus 256 123142 eqwo: 6 stops on route, 5 unique stops, 4371.02 route length"),
-        "Incorrect request processing");
+        "Incorrect BUS request processing");
     out.str("");
     request = " Bus 750 One Twwo  ";
     ParseAndPrintStat(catalogue, request, out);
     result = out.str();
     ASSERT_EQUAL_HINT(TrimTrailingNewline(result), std::string("Bus 750 One Twwo: not found"),
-        "Incorrect request processing");
+        "Incorrect BUS request processing");
     out.str("");
     request = "    Bus 750 One Two   ";
     ParseAndPrintStat(catalogue, request, out);
     result = out.str();
     ASSERT_EQUAL_HINT(TrimTrailingNewline(result), std::string("Bus 750 One Two: 5 stops on route, 3 unique stops, 20939.5 route length"),
-        "Incorrect request processing");
+        "Incorrect BUS request processing");
+    out.str("");
+    request = "     Stop Rasskazovka     ";
+    ParseAndPrintStat(catalogue, request, out);
+    result = out.str();
+    ASSERT_EQUAL_HINT(TrimTrailingNewline(result), std::string("Stop Rasskazovka: buses 750 One Two"),
+        "Incorrect STOP request processing");
 }
 
 void TestTransportCatalogue() {

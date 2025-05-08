@@ -111,10 +111,9 @@ void InputReader::ApplyCommands([[maybe_unused]] TransportCatalogue& catalogue) 
 
     for (const CommandDescription& input : commands_) {
         if (input.command[0] == 'S') {
-            Stop result;
-            result.name = std::string(Trim(input.id));
-            result.coordinates = ParseCoordinates(input.description);
-            catalogue.AddStop(std::move(result));
+            std::string name = std::string(Trim(input.id));
+            detail::Coordinates coordinates = ParseCoordinates(input.description);
+            catalogue.AddStop(std::move(name), coordinates);
         }
         else if (input.command[0] == 'B') {
             buffer.insert({Trim(input.id), ParseRoute(input.description)});
