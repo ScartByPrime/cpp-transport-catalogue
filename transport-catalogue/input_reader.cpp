@@ -108,7 +108,7 @@ void InputReader::ParseLine(std::string_view line) {
 
 void InputReader::ApplyCommands([[maybe_unused]] TransportCatalogue& catalogue) const {
     std::unordered_map<std::string_view, std::vector<std::string_view>> buffer;
-
+    // Передаем остановки, буферизуем маршруты
     for (const CommandDescription& input : commands_) {
         if (input.command[0] == 'S') {
             std::string name = std::string(Trim(input.id));
@@ -119,5 +119,8 @@ void InputReader::ApplyCommands([[maybe_unused]] TransportCatalogue& catalogue) 
             buffer.insert({Trim(input.id), ParseRoute(input.description)});
         }
     }
-    catalogue.AddRoutes(std::move(buffer));
+    // Передаем маршруты
+    for (auto& [bus, stops] : buffer) {
+        catalogue.AddRoute(bus, stops);
+    }
 }

@@ -6,6 +6,7 @@
 #include <vector>
 #include <unordered_map>
 #include <unordered_set>
+#include <utility>
 
 #include "geo.h"
 
@@ -31,13 +32,41 @@ namespace transport_catalogue {
 
 	class TransportCatalogue {
 	public:
-		void AddStop(std::string&& name, detail::Coordinates coordinates);
+		/*
+		Правильно ли я понимаю, что замечания направлены на улучшение универсальности и интуитивности интерфейса?
+		Я попытался добиться большей универсальности за счет использования forwarding reference, сохранив производительность методов.
+		Теперь база способна как принимать владение обработанными интерфейсом данными, избегая копирования строк, так и создавать их самостоятельно
+		*/ 
 
-		void AddRoutes(std::unordered_map<std::string_view, std::vector<std::string_view>>&& buffer);
+		template <typename StringType>
+		void AddStop(StringType&& name, detail::Coordinates coordinates) {
+			Stop result;
+			result.name = std::forward<StringType>(name);
+			result.coordinates = coordinates;
+			stops_.push_back(std::move(result));
+			stopname_to_stop_.insert({ stops_.back().name, &stops_.back() });
+		}
 
-		StopPtr CheckDaStop(std::string_view stop_name) const;
+		template <typename StringType>
+		void AddRoute(StringType&& route, const std::vector<std::string_view>& stops) {
+			Bus result;
+			result.name = std::forward<StringType>(route);
 
-		BusPtr CheckDaBus(std::string_view bus_name) const;
+			for (std::string_view stop : stops) {
+				result.route.push_back(stopname_to_stop_.at(stop));
+			}
+
+			buses_.push_back(std::move(result));
+			busname_to_bus_.insert({ buses_.back().name, &buses_.back() });
+
+			for (std::string_view stop : stops) {
+				stop_to_routes_[stopname_to_stop_.at(stop)].insert(&buses_.back());
+			}
+		}
+
+		StopPtr GetStop(std::string_view stop_name) const;
+
+		BusPtr GetBus(std::string_view bus_name) const;
 
 		RouteStatistics GetRouteInfo(std::string_view bus_name) const;
 

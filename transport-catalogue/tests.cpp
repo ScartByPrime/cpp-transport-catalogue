@@ -73,8 +73,8 @@ void TestStopAdding() {
     reader.ParseLine(input_with_space);
     TransportCatalogue catalogue;
     reader.ApplyCommands(catalogue);
-    ASSERT_HINT(catalogue.CheckDaStop("Tolstopaltsevo"sv), "Stop with single-word name was added incorrectly");
-    ASSERT_HINT(catalogue.CheckDaStop("Biryulyovo Tovarnaya"sv), "Stop with multiple-words name was added incorrectly");
+    ASSERT_HINT(catalogue.GetStop("Tolstopaltsevo"sv) != nullptr, "Stop with single-word name was added incorrectly");
+    ASSERT_HINT(catalogue.GetStop("Biryulyovo Tovarnaya"sv) != nullptr, "Stop with multiple-words name was added incorrectly");
 }
 
 void TestBufferingAndCalculations() {

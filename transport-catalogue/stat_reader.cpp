@@ -14,7 +14,7 @@ void interface::ParseAndPrintStat(const transport_catalogue::TransportCatalogue&
         begin = command.find_first_of(' ');
         std::string_view id = command.substr(command.find_first_not_of(' ', begin), end - begin);
 
-        if (transport_catalogue.CheckDaBus(id) != nullptr) {
+        if (transport_catalogue.GetBus(id) != nullptr) {
             transport_catalogue::RouteStatistics stat = transport_catalogue.GetRouteInfo(id);
             output << "Bus " << id << ": " << stat.route_size << " stops on route, "
                 << stat.unique_stops << " unique stops, " 
@@ -29,7 +29,7 @@ void interface::ParseAndPrintStat(const transport_catalogue::TransportCatalogue&
         begin = command.find_first_of(' ');
         std::string_view id = command.substr(command.find_first_not_of(' ', begin), end - begin);
 
-        if (transport_catalogue.CheckDaStop(id) != nullptr) {
+        if (transport_catalogue.GetStop(id) != nullptr) {
             output << "Stop " << id << ": ";
             std::vector<std::string_view> buses = transport_catalogue.GetBusesForStop(id);
             if (!buses.empty()) {

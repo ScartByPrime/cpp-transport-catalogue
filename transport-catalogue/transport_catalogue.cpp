@@ -5,40 +5,14 @@
 
 using namespace transport_catalogue;
 
-void TransportCatalogue::AddStop(std::string&& name, detail::Coordinates coordinates) {
-	Stop result;
-	result.name = std::move(name);
-	result.coordinates = coordinates;
-	stops_.push_back(std::move(result));
-	stopname_to_stop_.insert({ stops_.back().name, &stops_.back() });
-}
-
-void TransportCatalogue::AddRoutes(std::unordered_map<std::string_view, std::vector<std::string_view>> && buffer) {
-	for (auto& [bus, stops] : buffer) {
-		Bus result;
-		result.name = std::string(bus);
-
-		for (std::string_view stop : stops) {
-			result.route.push_back(stopname_to_stop_.at(stop));
-		}
-
-		buses_.push_back(std::move(result));
-		busname_to_bus_.insert({ buses_.back().name, &buses_.back() });
-
-		for (std::string_view stop : stops) {
-			stop_to_routes_[stopname_to_stop_.at(stop)].insert(&buses_.back());
-		}
-	}
-}
-
-StopPtr TransportCatalogue::CheckDaStop(std::string_view stop_name) const {
+StopPtr TransportCatalogue::GetStop(std::string_view stop_name) const {
 	if (stopname_to_stop_.count(stop_name)) {
 		return stopname_to_stop_.at(stop_name);
 	}
 	return nullptr;
 }
 
-BusPtr TransportCatalogue::CheckDaBus(std::string_view bus_name) const {
+BusPtr TransportCatalogue::GetBus(std::string_view bus_name) const {
 	if (busname_to_bus_.count(bus_name)) {
 		return busname_to_bus_.at(bus_name);
 	}
