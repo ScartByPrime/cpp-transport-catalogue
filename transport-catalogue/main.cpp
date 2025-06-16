@@ -8,13 +8,10 @@ using namespace std;
 using namespace transport_catalogue;
 using namespace interface;
 
-extern void TestTransportCatalogue();
+
 
 int main() {
-    TestTransportCatalogue();
-
     TransportCatalogue catalogue;
-
     int base_request_count;
     cin >> base_request_count >> ws;
 
@@ -26,7 +23,7 @@ int main() {
             reader.ParseLine(line);
         }
         reader.ApplyCommands(catalogue);   
-    } // на этом этапе уничтожается reader и все strings инвалидируются, нужно их скопировать до этого в cartalogue
+    }
 
     int stat_request_count;
     cin >> stat_request_count >> ws;

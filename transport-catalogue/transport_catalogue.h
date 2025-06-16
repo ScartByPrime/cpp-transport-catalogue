@@ -11,13 +11,13 @@
 #include "geo.h"
 
 namespace transport_catalogue {
-	//отношение остановок к маршрутам перемещено в поля класса TransportCatalogue
+
 	struct Stop {
 		std::string name;
 		detail::Coordinates coordinates;
 	};
 	using StopPtr = const Stop*;
-	// удален параметр unique_stops, применен алиас
+
 	struct Bus {
 		std::string name;
 		std::vector<StopPtr> route;
@@ -28,15 +28,11 @@ namespace transport_catalogue {
 		size_t route_size = 0;
 		size_t unique_stops = 0;
 		double route_distance = 0.0;
+		double curvature = 0.0;
 	};
 
 	class TransportCatalogue {
 	public:
-		/*
-		Правильно ли я понимаю, что замечания направлены на улучшение универсальности и интуитивности интерфейса?
-		Я попытался добиться большей универсальности за счет использования forwarding reference, сохранив производительность методов.
-		Теперь база способна как принимать владение обработанными интерфейсом данными, избегая копирования строк, так и создавать их самостоятельно
-		*/ 
 
 		template <typename StringType>
 		void AddStop(StringType&& name, detail::Coordinates coordinates) {
@@ -64,6 +60,8 @@ namespace transport_catalogue {
 			}
 		}
 
+		void ApplyRelatedStops(const std::unordered_map<std::string_view, std::unordered_map<std::string_view, int>>& buffer_related_stops);
+
 		StopPtr GetStop(std::string_view stop_name) const;
 
 		BusPtr GetBus(std::string_view bus_name) const;
@@ -79,6 +77,8 @@ namespace transport_catalogue {
 		std::deque<Stop> stops_;
 		// хеш-таблица для ускорения поиска остановки
 		std::unordered_map<std::string_view, StopPtr> stopname_to_stop_;
+		// хеш-таблица для быстрого поиска ближайших остановок реализована в полях, чтобы не нарушать const-correctness
+		std::unordered_map<StopPtr, std::unordered_map<StopPtr, int>> stop_to_related_stops_;
 		std::deque<Bus> buses_;
 		// хеш-таблица для ускорения поиска автобуса
 		std::unordered_map<std::string_view, BusPtr> busname_to_bus_;

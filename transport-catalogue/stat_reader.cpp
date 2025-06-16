@@ -19,7 +19,7 @@ void interface::ParseAndPrintStat(const transport_catalogue::TransportCatalogue&
             output << "Bus " << id << ": " << stat.route_size << " stops on route, "
                 << stat.unique_stops << " unique stops, " 
                 << std::setprecision(6) << stat.route_distance
-                << " route length" << '\n';
+                << " route length, " << stat.curvature << " curvature" << '\n';
         }
         else {
             output << "Bus " << id << ": not found" << '\n';
