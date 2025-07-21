@@ -1,36 +1,17 @@
 #pragma once
 
+#include "domain.h"
+
+#include <stdexcept>
 #include <stack>
-#include <string>
+#include <set>
 #include <string_view>
-#include <vector>
-#include <unordered_map>
 #include <unordered_set>
 #include <utility>
+#include <optional>
 
-#include "geo.h"
 
 namespace transport_catalogue {
-
-	struct Stop {
-		std::string name;
-		detail::Coordinates coordinates;
-	};
-	using StopPtr = const Stop*;
-
-	struct Bus {
-		std::string name;
-		std::vector<StopPtr> route;
-	};
-	using BusPtr = const Bus*;
-	// структура для аккумуляции данных о конкретном маршруте
-	struct RouteStatistics {
-		size_t route_size = 0;
-		size_t unique_stops = 0;
-		double route_distance = 0.0;
-		double curvature = 0.0;
-	};
-
 	class TransportCatalogue {
 	public:
 
@@ -49,6 +30,9 @@ namespace transport_catalogue {
 			result.name = std::forward<StringType>(route);
 
 			for (std::string_view stop : stops) {
+				if (!stopname_to_stop_.contains(stop)) {
+					throw std::logic_error("AddRoute fail");
+				}
 				result.route.push_back(stopname_to_stop_.at(stop));
 			}
 
@@ -56,19 +40,22 @@ namespace transport_catalogue {
 			busname_to_bus_.insert({ buses_.back().name, &buses_.back() });
 
 			for (std::string_view stop : stops) {
+				if (!stopname_to_stop_.contains(stop)) {
+					throw std::logic_error("AddRoute fail");
+				}
 				stop_to_routes_[stopname_to_stop_.at(stop)].insert(&buses_.back());
 			}
 		}
 
-		void ApplyRelatedStops(const std::unordered_map<std::string_view, std::unordered_map<std::string_view, int>>& buffer_related_stops);
+		void ApplyRelatedStop(const std::string_view& stop, const std::string_view& related_stop, int distance);
 
 		StopPtr GetStop(std::string_view stop_name) const;
 
 		BusPtr GetBus(std::string_view bus_name) const;
 
-		RouteStatistics GetRouteInfo(std::string_view bus_name) const;
+		std::optional<RouteStatistics> GetRouteInfo(std::string_view bus_name) const;
 
-		std::vector<std::string_view> GetBusesForStop(std::string_view stop_name) const;
+		std::set<std::string_view> GetBusesForStop(std::string_view stop_name) const;
 
 		
 

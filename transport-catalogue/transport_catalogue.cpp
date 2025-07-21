@@ -1,27 +1,16 @@
 #include "transport_catalogue.h"
-#include "input_reader.h"
 
 #include <algorithm>
 #include <iostream>
 
 using namespace transport_catalogue;
 
-void TransportCatalogue::ApplyRelatedStops(const std::unordered_map<std::string_view, std::unordered_map<std::string_view, int>>& buffer_related_stops) {
-    for (const auto& name_to_stops : buffer_related_stops) {
-		assert((!stopname_to_stop_.empty() || stopname_to_stop_.contains(name_to_stops.first)) && "Ключи буфера не совпадают со списком остановок");
-        StopPtr stop = stopname_to_stop_.at(name_to_stops.first);  
-        std::unordered_map<StopPtr, int> related_stops_local;
-
-        for (const auto& [stop_name, distance] : name_to_stops.second) {
-			if (!stopname_to_stop_.contains(stop_name)) {
-				std::cerr << std::string(stop_name) << " - Неизвестная остановка" << '\n';
-			}
-			assert(stopname_to_stop_.contains(stop_name) && "Значения буфера не совпадают со списком остановок");
-            related_stops_local[stopname_to_stop_.at(stop_name)] = distance;  
-        }
-
-        stop_to_related_stops_[stop] = std::move(related_stops_local);
-    }
+void TransportCatalogue::ApplyRelatedStop(const std::string_view& stop, const std::string_view& related_stop, int distance) {
+	if (!stopname_to_stop_.contains(stop)) {
+		throw std::logic_error("ApplyRelatedStop fail");
+	}
+	StopPtr stop_ptr = stopname_to_stop_.at(stop);
+	stop_to_related_stops_[stop_ptr].insert({ stopname_to_stop_.at(related_stop), distance });
 }
 
 StopPtr TransportCatalogue::GetStop(std::string_view stop_name) const {
@@ -38,16 +27,16 @@ BusPtr TransportCatalogue::GetBus(std::string_view bus_name) const {
 	return nullptr;
 }
 
-RouteStatistics TransportCatalogue::GetRouteInfo(std::string_view bus_name) const {
+std::optional<RouteStatistics> TransportCatalogue::GetRouteInfo(std::string_view bus_name) const {
 	RouteStatistics result;
 	auto iter = busname_to_bus_.find(bus_name);
 	if (iter == busname_to_bus_.end()) {
-		return result;
+		return std::nullopt;
 	}
 
 	BusPtr bus = iter->second;
 	const std::vector<StopPtr> route = bus->route;
-	result.route_size = route.size();
+	result.route_size = static_cast<int>(route.size());
 
 	std::unordered_set<StopPtr> unique_stops(route.begin(), route.end());
 	result.unique_stops = static_cast<int>(unique_stops.size());
@@ -56,11 +45,14 @@ RouteStatistics TransportCatalogue::GetRouteInfo(std::string_view bus_name) cons
 	double route_distance = 0.0;
 	for (auto it = route.begin(); it != route.end() - 1; ++it) {
 		geo_distance += detail::ComputeDistance((*it)->coordinates, (*next(it))->coordinates);
+		if (!stop_to_related_stops_.contains(*it)) {
+			throw std::logic_error("GetRouteInfo fail");
+		}
 		std::unordered_map<StopPtr, int> related_stops = stop_to_related_stops_.at(*it);
 
 		if (!related_stops.contains(*next(it))) {
 			std::cerr << "WARNING: " << (*it)->name << " has no related stop by name " << (*next(it))->name << '\n';
-			continue;
+			throw std::logic_error("GetRouteInfo fail");
 		}
 
 		route_distance += related_stops.at(*next(it));
@@ -69,18 +61,20 @@ RouteStatistics TransportCatalogue::GetRouteInfo(std::string_view bus_name) cons
 	result.route_distance = route_distance;
 	result.curvature =  route_distance / geo_distance;
 
-	return result;
+	return std::optional<RouteStatistics>(result);
 }
 
-std::vector<std::string_view> TransportCatalogue::GetBusesForStop(std::string_view stop_name) const {
-	std::vector<std::string_view> result;
+std::set<std::string_view> TransportCatalogue::GetBusesForStop(std::string_view stop_name) const {
+	std::set<std::string_view> result;
+	if (!stopname_to_stop_.contains(stop_name)) {
+		throw std::logic_error("GetBusesForStop fail");
+	}
 	StopPtr stop = stopname_to_stop_.at(stop_name);
 
 	if (stop_to_routes_.contains(stop) && !stop_to_routes_.at(stop).empty()) {
 		for (const auto* const bus : stop_to_routes_.at(stop)) {
-			result.push_back(bus->name);
+			result.insert(bus->name);
 		}
-		std::sort(result.begin(), result.end());
 	}
 	return result;
 }

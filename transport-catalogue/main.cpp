@@ -1,35 +1,58 @@
 #include <iostream>
-#include <string>
+#include <cstdio>
 
-#include "input_reader.h"
-#include "stat_reader.h"
+#include "request_handler.h"
+
 
 using namespace std;
 using namespace transport_catalogue;
 using namespace interface;
+using namespace json;
 
 
 
 int main() {
-    TransportCatalogue catalogue;
-    int base_request_count;
-    cin >> base_request_count >> ws;
 
-    {
-        InputReader reader;
-        for (int i = 0; i < base_request_count; ++i) {
-            string line;
-            getline(cin, line);
-            reader.ParseLine(line);
-        }
-        reader.ApplyCommands(catalogue);   
+    FILE* inFile;
+    FILE* outFile;
+
+    errno_t err = freopen_s(&inFile, "in.json", "r", stdin);
+    if (err != 0) {
+        std::cerr << "freopen_s failed with error code: " << err << "\n";
     }
 
-    int stat_request_count;
-    cin >> stat_request_count >> ws;
-    for (int i = 0; i < stat_request_count; ++i) {
-        string line;
-        getline(cin, line);
-        ParseAndPrintStat(catalogue, line, cout);
+    freopen_s(&inFile, "in.json", "r", stdin);
+    freopen_s(&outFile, "out.json", "w", stdout);
+
+    try {
+        Document doc;
+        doc = Load(cin);
+        JsonReader reader(doc);
+        TransportCatalogue catalogue;
+        reader.ApplyRequests(catalogue);
+
+        vector<detail::Coordinates> all_geo_coords;
+        const RouteList& route_list = reader.GetRouteList();
+        const svg::RenderSettings settings = reader.GetRenderSettings();
+
+        for (const auto& [route, _] : route_list) {
+            for (const StopPtr& stop : catalogue.GetBus(route)->route) {
+                all_geo_coords.push_back(stop->coordinates);
+            }
+        }
+        svg::SphereProjector projector(
+            all_geo_coords.begin(), all_geo_coords.end(),
+            settings.width, settings.height, settings.padding
+        );
+
+        svg::MapRenderer renderer(settings, projector);
+        RequestHandler facade(catalogue, renderer, reader);
+        facade.PrintResponse(cout);
+        //svg::Document map = facade.RenderMap();
+        //map.Render(cout);
+    }
+    catch (const std::exception& e) {
+        cerr << e.what() << endl;
+        std::abort();
     }
 }
