@@ -67,7 +67,7 @@ std::optional<RouteStatistics> TransportCatalogue::GetRouteInfo(std::string_view
 std::set<std::string_view> TransportCatalogue::GetBusesForStop(std::string_view stop_name) const {
 	std::set<std::string_view> result;
 	if (!stopname_to_stop_.contains(stop_name)) {
-		throw std::logic_error("GetBusesForStop fail");
+		throw std::invalid_argument("GetBusesForStop fail, invalid stop name");
 	}
 	StopPtr stop = stopname_to_stop_.at(stop_name);
 
@@ -77,4 +77,15 @@ std::set<std::string_view> TransportCatalogue::GetBusesForStop(std::string_view 
 		}
 	}
 	return result;
+}
+
+int TransportCatalogue::GetDistance(std::string_view stop_from, std::string_view stop_to) const {
+	StopPtr from = GetStop(stop_from);
+	StopPtr to = GetStop(stop_to);
+
+	if (from == nullptr || to == nullptr) {
+		throw std::invalid_argument("Distance cannot be calculated, one or two stop names are invalid");
+	}
+	
+	return stop_to_related_stops_.at(from).at(to);
 }

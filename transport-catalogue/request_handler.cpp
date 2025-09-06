@@ -5,8 +5,8 @@ using namespace json;
 using namespace interface;
 
 RequestHandler::RequestHandler(const transport_catalogue::TransportCatalogue& db,
-	const svg::MapRenderer& renderer, const interface::JsonReader& reader)
-: db_(db), reader_(reader), renderer_(renderer) {
+	const svg::MapRenderer& renderer, const interface::JsonReader& reader, const graph::TransportRouter& router)
+: db_(db), reader_(reader), renderer_(renderer), router_(router) {
 }
 
 RouteListPtr RequestHandler::GetRouteListPtr() const {
@@ -25,7 +25,7 @@ RouteListPtr RequestHandler::GetRouteListPtr() const {
 
 void RequestHandler::PrintResponse(std::ostream& out) const {
 	svg::Document map = renderer_.RenderMap(GetRouteListPtr());
-	json::Document result_json = reader_.GetResponse(db_, map);
+	json::Document result_json = reader_.GetResponse(db_, router_, map);
 	Print(result_json, out);
 }
 

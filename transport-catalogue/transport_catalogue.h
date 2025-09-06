@@ -57,14 +57,14 @@ namespace transport_catalogue {
 
 		std::set<std::string_view> GetBusesForStop(std::string_view stop_name) const;
 
-		
+		int GetDistance(std::string_view stop_from, std::string_view stop_to) const;
 
 	private:
 		// остановки
 		std::deque<Stop> stops_;
 		// хеш-таблица для ускорения поиска остановки
 		std::unordered_map<std::string_view, StopPtr> stopname_to_stop_;
-		// хеш-таблица для быстрого поиска ближайших остановок реализована в полях, чтобы не нарушать const-correctness
+		// хеш-таблица для быстрого поиска ближайших остановок
 		std::unordered_map<StopPtr, std::unordered_map<StopPtr, int>> stop_to_related_stops_;
 		std::deque<Bus> buses_;
 		// хеш-таблица для ускорения поиска автобуса

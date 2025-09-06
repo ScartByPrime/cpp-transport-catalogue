@@ -3,6 +3,7 @@
 using namespace transport_catalogue;
 using namespace json;
 using namespace interface;
+using namespace graph;
 
 
 void JsonReader::Read(const Document& doc) {
@@ -12,13 +13,16 @@ void JsonReader::Read(const Document& doc) {
 	}
 	for (const auto& request_type : root.AsDict()) {
 		if (request_type.first == "base_requests") {
-			base_requests_ = Document(request_type.second);
+			sections_.base_requests = Document(request_type.second);
 		}
 		else if (request_type.first == "stat_requests") {
-			stat_requests_ = Document(request_type.second);
+			sections_.stat_requests = Document(request_type.second);
 		}
 		else if (request_type.first == "render_settings") {
-			render_settings_ = Document(request_type.second);
+			sections_.render_settings = Document(request_type.second);
+		}
+		else if (request_type.first == "routing_settings") {
+			sections_.routing_settings = Document(request_type.second);
 		}
 		else throw std::invalid_argument("Unexpected json format");
 	}
@@ -63,15 +67,21 @@ void JsonReader::ApplyBuffer(BufferRelatedStops& buffer_related_stops, const Buf
 	}
 }
 
+RouterStats JsonReader::GetRouterStats() const {
+	int bus_wait_time = sections_.routing_settings.GetRoot().AsDict().at("bus_wait_time").AsInt();
+	double bus_velocity = sections_.routing_settings.GetRoot().AsDict().at("bus_velocity").AsDouble();
+	return { bus_wait_time, bus_velocity };
+}
+
 void JsonReader::ApplyRequests(TransportCatalogue& catalogue) {
 	BufferRelatedStops buffer_related_stops;
 	BufferBuses buffer_buses;
 
-	if (!base_requests_.GetRoot().IsArray()) {
+	if (!sections_.base_requests.GetRoot().IsArray()) {
 		throw std::invalid_argument("Unexpected json format");
 	}
 
-	for (const auto& value : base_requests_.GetRoot().AsArray()) {
+	for (const auto& value : sections_.base_requests.GetRoot().AsArray()) {
 		if (!value.IsDict()) {
 			throw std::invalid_argument("Unexpected json format");
 		}
@@ -103,6 +113,7 @@ void JsonReader::ApplyRequests(TransportCatalogue& catalogue) {
 			coords.lng = value.AsDict().at("longitude").AsDouble();
 			catalogue.AddStop(value.AsDict().at("name").AsString(), coords);
 			std::string_view weak_name = catalogue.GetStop(value.AsDict().at("name").AsString())->name;
+
 			// Буферизация
 			if (!value.AsDict().at("road_distances").AsDict().empty()) {
 				for (const auto& [stop, distance] : value.AsDict().at("road_distances").AsDict()) {
@@ -116,8 +127,10 @@ void JsonReader::ApplyRequests(TransportCatalogue& catalogue) {
 	ApplyBuffer(buffer_related_stops, buffer_buses, catalogue);
 }
 
-json::Document JsonReader::GetResponse(const TransportCatalogue& catalogue, const svg::Document& map) const {
-	const Node& stat = stat_requests_.GetRoot();
+json::Document JsonReader::GetResponse(const TransportCatalogue& catalogue,
+	const TransportRouter& router, const svg::Document& map) const {
+
+	const Node& stat = sections_.stat_requests.GetRoot();
 	if (!stat.IsArray()) {
 		throw std::invalid_argument("Unexpected json format");
 	}
@@ -172,6 +185,36 @@ json::Document JsonReader::GetResponse(const TransportCatalogue& catalogue, cons
 			map.Render(ostr);
 			dict_builder.Key("map").Value(ostr.str());
 		}
+		else if (type == "Route") {
+			const std::string_view start(dict.at("from").AsString());
+			const std::string_view finish(dict.at("to").AsString());
+
+			const auto route_info_opt = router.GetRoute(start, finish);
+
+			if (!route_info_opt.has_value()) {
+				dict_builder.Key("error_message").Value("not found");
+			}
+			else {
+				const auto route_info = route_info_opt.value();
+				dict_builder.Key("total_time").Value(route_info.total_time);
+				auto& items_array = dict_builder.Key("items").StartArray();
+				for (const auto& item : route_info.items) {
+					auto& item_dict = items_array.StartDict();
+					if (item.type == EdgeType::WAIT) {
+						item_dict.Key("type").Value("Wait");
+						item_dict.Key("stop_name").Value(std::string(item.event_name));
+					}
+					else {
+						item_dict.Key("type").Value("Bus");
+						item_dict.Key("bus").Value(std::string(item.event_name));
+						item_dict.Key("span_count").Value(static_cast<int>(item.span_count));
+					}
+					item_dict.Key("time").Value(item.time);
+					item_dict.EndDict();
+				}
+				items_array.EndArray();
+			}
+		}
 
 		dict_builder.Key("request_id").Value(request_id);
 		dict_builder.EndDict();
@@ -184,7 +227,7 @@ json::Document JsonReader::GetResponse(const TransportCatalogue& catalogue, cons
 
 svg::RenderSettings JsonReader::GetRenderSettings() const {
 	svg::RenderSettings result;
-	Node root = render_settings_.GetRoot();
+	Node root = sections_.render_settings.GetRoot();
 
 	if (!root.IsDict()) {
 		throw std::invalid_argument("Unexpected json format");

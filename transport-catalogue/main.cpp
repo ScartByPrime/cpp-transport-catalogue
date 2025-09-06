@@ -8,6 +8,7 @@ using namespace std;
 using namespace transport_catalogue;
 using namespace interface;
 using namespace json;
+using namespace graph;
 
 
 
@@ -45,8 +46,12 @@ int main() {
             settings.width, settings.height, settings.padding
         );
 
+        const RouterStats stats = reader.GetRouterStats();
+        TransportRouter router(catalogue, stats.bus_wait_time, stats.bus_velocity);
+        router.BuildRouter(route_list);
+
         svg::MapRenderer renderer(settings, projector);
-        RequestHandler facade(catalogue, renderer, reader);
+        RequestHandler facade(catalogue, renderer, reader, router);
         facade.PrintResponse(cout);
         //svg::Document map = facade.RenderMap();
         //map.Render(cout);

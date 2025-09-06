@@ -7,7 +7,10 @@ namespace interface {
     class RequestHandler {
     public:
 
-        RequestHandler(const transport_catalogue::TransportCatalogue& db, const svg::MapRenderer& renderer, const interface::JsonReader& reader);
+        RequestHandler(const transport_catalogue::TransportCatalogue& db,
+            const svg::MapRenderer& renderer,
+            const interface::JsonReader& reader,
+            const graph::TransportRouter& router);
 
         void PrintResponse(std::ostream& out) const;
 
@@ -19,5 +22,6 @@ namespace interface {
         const transport_catalogue::TransportCatalogue& db_;
         const interface::JsonReader& reader_;
         const svg::MapRenderer& renderer_;
+        const graph::TransportRouter& router_;
     };
 }
