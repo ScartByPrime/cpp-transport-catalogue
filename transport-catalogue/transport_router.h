@@ -25,11 +25,8 @@ namespace graph {
 
 	class TransportRouter {
 	public:
-		explicit TransportRouter(const transport_catalogue::TransportCatalogue& catalogue, const int bus_wait_time, const double bus_velocity);
-
-		void BuildRouter(const interface::RouteList& routes);
-
-		bool IsInitialized() const;
+		explicit TransportRouter(const transport_catalogue::TransportCatalogue& catalogue,
+			const interface::RouteList& routes, const int bus_wait_time, const double bus_velocity);
 
 		std::optional<RouteInfoSpecified> GetRoute(std::string_view from, std::string_view to) const;
 
@@ -41,6 +38,7 @@ namespace graph {
 		};
 
 		void FillStopIdAndVertexCount(const interface::RouteList& routes);
+		void BuildRouter(const interface::RouteList& routes);
 
 		const transport_catalogue::TransportCatalogue& db_;
 		const int bus_wait_time_;

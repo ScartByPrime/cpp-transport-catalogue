@@ -47,14 +47,13 @@ int main() {
         );
 
         const RouterStats stats = reader.GetRouterStats();
-        TransportRouter router(catalogue, stats.bus_wait_time, stats.bus_velocity);
-        router.BuildRouter(route_list);
+        TransportRouter router(catalogue, route_list, stats.bus_wait_time, stats.bus_velocity);
 
         svg::MapRenderer renderer(settings, projector);
         RequestHandler facade(catalogue, renderer, reader, router);
         facade.PrintResponse(cout);
-        //svg::Document map = facade.RenderMap();
-        //map.Render(cout);
+        svg::Document map = facade.RenderMap();
+        map.Render(cout);
     }
     catch (const std::exception& e) {
         cerr << e.what() << endl;

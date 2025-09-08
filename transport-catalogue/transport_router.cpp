@@ -4,8 +4,11 @@ using namespace transport_catalogue;
 using namespace interface;
 
 namespace graph {
-    TransportRouter::TransportRouter(const TransportCatalogue& catalogue, int bus_wait_time, double bus_velocity)
+    TransportRouter::TransportRouter(const transport_catalogue::TransportCatalogue& catalogue,
+        const interface::RouteList& routes, const int bus_wait_time, const double bus_velocity)
         : db_(catalogue), bus_wait_time_(bus_wait_time), bus_velocity_(bus_velocity), router_(std::nullopt) {
+
+        BuildRouter(routes);
     }
 
     void TransportRouter::FillStopIdAndVertexCount(const RouteList& routes) {
@@ -97,11 +100,6 @@ namespace graph {
             }
         }
         router_.emplace(graph_);
-    }
-
-
-    bool TransportRouter::IsInitialized() const {
-        return router_.has_value();
     }
 
     std::optional<RouteInfoSpecified> TransportRouter::GetRoute(std::string_view from, std::string_view to) const {
