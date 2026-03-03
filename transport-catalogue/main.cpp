@@ -1,4 +1,5 @@
 #include <iostream>
+#include <fstream>
 #include <cstdio>
 
 #include "request_handler.h"
@@ -13,17 +14,18 @@ using namespace graph;
 
 
 int main() {
-
-    FILE* inFile;
-    FILE* outFile;
-
-    errno_t err = freopen_s(&inFile, "in.json", "r", stdin);
-    if (err != 0) {
-        std::cerr << "freopen_s failed with error code: " << err << "\n";
+    if (!freopen("in.json", "r", stdin)) {
+        cerr << "Cannot open in.json\n";
+        return 1;
     }
-
-    freopen_s(&inFile, "in.json", "r", stdin);
-    freopen_s(&outFile, "out.json", "w", stdout);
+    
+    ofstream json_out("output/out.json");
+    ofstream xml_out("output/out.xml");
+    
+    if (!json_out || !xml_out) {
+        cerr << "Cannot open output files\n";
+        return 1;
+    }
 
     try {
         Document doc;
@@ -51,9 +53,9 @@ int main() {
 
         svg::MapRenderer renderer(settings, projector);
         RequestHandler facade(catalogue, renderer, reader, router);
-        facade.PrintResponse(cout);
+        facade.PrintResponse(json_out);
         svg::Document map = facade.RenderMap();
-        map.Render(cout);
+        map.Render(xml_out);
     }
     catch (const std::exception& e) {
         cerr << e.what() << endl;

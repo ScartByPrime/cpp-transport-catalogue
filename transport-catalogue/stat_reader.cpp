@@ -34,7 +34,7 @@ void interface::ParseAndPrintStat(const transport_catalogue::TransportCatalogue&
 
         if (transport_catalogue.GetStop(id) != nullptr) {
             output << "Stop " << id << ": ";
-            std::unordered_set<std::string_view> buses = transport_catalogue.GetBusesForStop(id);
+            std::set<std::string_view> buses = transport_catalogue.GetBusesForStop(id);
             if (!buses.empty()) {
                 output << "buses ";
                 auto it = buses.begin();
