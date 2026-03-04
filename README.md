@@ -1,15 +1,58 @@
-# cpp-transport-catalogue
-Transport Catalogue.
-A functional C++ system for collecting and storing stops and routes data with fast search for optimal routes for passengers.
+# Transport Catalogue
 
-Solution
-The algorithm is based on a weighted directed graph and uses adapted Dijkstra and Floyd-Warshall algorithms.
-The directory is populated via a JSON document.
-Route visualization is implemented in SVG format.
-Fully IDE build.
+A functional C++ system for collecting and storing public transport stops and routes, with fast search for optimal passenger routes and SVG visualization.
 
-Result
-An efficient and scalable solution was developed, fully prepared for further integration. However, the solution is already completely independent:
-- Efficiently populates the database from a JSON document.
-- Fast, comprehensive database search is implemented.
-- The application can find the most efficient route and visualize it, generating instructions in SVG format.
+## Features
+- JSON-based configuration — populate database and make queries via JSON documents
+- Optimal route search — weighted directed graph with adapted Dijkstra algorithm
+- Route visualization — generate SVG maps with stops and routes
+- Comprehensive statistics — bus routes, stop information, route calculations
+
+## Building
+**Linux / macOS**
+
+*bash*
+- git clone https://github.com/ScartByPrime/cpp-transport-catalogue
+- cd cpp-transport-catalogue
+- mkdir build && cd build
+- cmake ..
+- make
+
+**Windows**
+  
+*bash*
+- git clone https://github.com/ScartByPrime/cpp-transport-catalogue
+- cd cpp-transport-catalogue
+- mkdir build && cd build
+- cmake ..
+- cmake --build . --config Release
+## Usage
+The program reads in.json from the executable directory and writes results to out.json and out.svg.
+
+**Linux / macOS**
+
+*bash*
+- cd build
+- ./transport_catalogue
+
+**Windows**
+  
+*bash*
+- cd build\Release
+- transport_catalogue.exe
+
+*The input file in.json is automatically copied to the build directory during compilation.*
+
+### Input Structure
+The JSON document contains four sections:
+- base_requests — stops and bus routes definition
+- render_settings — SVG map appearance parameters
+- routing_settings — bus wait time and velocity
+- stat_requests — queries for bus info, stop info, or route between stops
+
+*You can find the example inside the in.json*
+
+### Output
+The program generates:
+- out.json — JSON responses matching each query
+- out.svg — SVG visualization
